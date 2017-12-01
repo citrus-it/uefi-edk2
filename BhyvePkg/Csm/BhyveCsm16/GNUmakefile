@@ -61,7 +61,7 @@ Bin/%.o: %.S
 	$(CC) $(ASFLAGS) $(CPPFLAGS) -c -o $@ $<
 
 Bin/BhyveCsm16.bin: linker.lds $(OBJECTS)
-	$(LD) -Tlinker.lds -m elf_x86_64_fbsd -o Bin/BhyveCsm16.raw.o -Map Bin/BhyveCsm16.bin.map $(OBJECTS)
+	$(LD) -Tlinker.lds -m elf_x86_64_sol2 -o Bin/BhyveCsm16.raw.o -Map Bin/BhyveCsm16.bin.map $(OBJECTS)
 	$(OBJCOPY) --only-section .raw --output-target binary --pad-to 0x100000 Bin/BhyveCsm16.raw.o Bin/BhyveCsm16.bin
 
 clean:

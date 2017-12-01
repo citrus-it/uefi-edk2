@@ -40,7 +40,7 @@ APPLICATION = $(MAKEROOT)/bin/$(APPNAME)
 all: $(MAKEROOT)/bin $(APPLICATION) 
 
 $(APPLICATION): $(OBJECTS) 
-	$(LINKER) -o $(APPLICATION) $(LFLAGS) $(OBJECTS) -L$(MAKEROOT)/libs $(LIBS)
+	$(LINKER) -o $(APPLICATION) $(LFLAGS) $(OBJECTS) -R$(GCCPATH)/lib/amd64 -L$(MAKEROOT)/libs $(LIBS)
 
 VfrCompiler.o: ../Include/Common/BuildVersion.h
 

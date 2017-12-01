@@ -20,6 +20,7 @@ ARCH ?= IA32
 CYGWIN:=$(findstring CYGWIN, $(shell uname -s))
 LINUX:=$(findstring Linux, $(shell uname -s))
 DARWIN:=$(findstring Darwin, $(shell uname -s))
+SUNOS:=$(findstring SunOS, $(shell uname -s))
 
 CC ?= gcc
 CXX ?= g++
@@ -66,6 +67,13 @@ ifeq ($(DARWIN),Darwin)
 endif
 endif
 
+ifeq ($(ARCH), X64)
+ifeq ($(SUNOS),SunOS)
+  CFLAGS   += -m64
+  CPPFLAGS   += -m64
+  LFLAGS   += -m64
+endif
+endif
   
 .PHONY: all
 .PHONY: install

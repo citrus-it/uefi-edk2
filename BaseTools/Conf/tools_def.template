@@ -4127,6 +4127,81 @@ DEFINE GCC49_AARCH64_ASLDLINK_FLAGS  = DEF(GCC_ARM_AARCH64_ASLDLINK_FLAGS)
 *_GCC44_X64_OBJCOPY_FLAGS        = 
 *_GCC44_X64_NASM_FLAGS           = -f elf64
 
+#############################################################################
+#
+# ILLGCC       -- illumos
+#         This configuration is used to compile under illumos to produce
+#         PE/COFF binaries using GCC 4.4.4
+#
+#############################################################################
+
+*_ILLGCC_*_*_FAMILY			= GCC
+
+DEFINE ILLGCC_PREFIX			= ENV(ILLGCC_BIN)
+DEFINE ILLGCC_IA32_PREFIX		= DEF(ILLGCC_PREFIX)
+DEFINE ILLGCC_X64_PREFIX		= DEF(ILLGCC_PREFIX)
+
+DEFINE ILLGCC_ALL_CC_FLAGS		= DEF(GCC44_ALL_CC_FLAGS)
+DEFINE ILLGCC_IA32_CC_FLAGS		= DEF(GCC44_IA32_CC_FLAGS)
+DEFINE ILLGCC_X64_CC_FLAGS		= DEF(GCC44_X64_CC_FLAGS)
+DEFINE ILLGCC_IA32_X64_DLINK_COMMON	= DEF(GCC44_IA32_X64_DLINK_COMMON)
+DEFINE ILLGCC_IA32_X64_ASLDLINK_FLAGS	= DEF(GCC44_IA32_X64_ASLDLINK_FLAGS)
+DEFINE ILLGCC_IA32_X64_DLINK_FLAGS	= DEF(GCC44_IA32_X64_DLINK_FLAGS)
+DEFINE ILLGCC_X64_DLINK_FLAGS		= DEF(ILLGCC_IA32_X64_DLINK_FLAGS) -melf_x86_64_sol2 --oformat=elf64-x86-64-sol2
+DEFINE ILLGCC_ASM_FLAGS			= DEF(GCC44_ASM_FLAGS)
+
+*_ILLGCC_*_MAKE_PATH			= ENV(GMAKE)
+*_ILLGCC_*_*_DLL			= ENV(GCC44_DLL)
+*_ILLGCC_*_ASL_PATH			= DEF(UNIX_IASL_BIN)
+
+*_ILLGCC_*_OBJCOPY_PATH			= ENV(GOBJCOPY)
+*_ILLGCC_*_CC_PATH			= DEF(ILLGCC_PREFIX)gcc
+*_ILLGCC_*_SLINK_PATH			= ENV(GAR)
+*_ILLGCC_*_DLINK_PATH			= ENV(GLD)
+*_ILLGCC_*_ASLDLINK_PATH		= ENV(GLD)
+*_ILLGCC_*_ASM_PATH			= DEF(ILLGCC_PREFIX)gcc
+*_ILLGCC_*_PP_PATH			= DEF(ILLGCC_PREFIX)gcc
+*_ILLGCC_*_VFRPP_PATH			= DEF(ILLGCC_PREFIX)gcc
+*_ILLGCC_*_ASLCC_PATH			= DEF(ILLGCC_PREFIX)gcc
+*_ILLGCC_*_ASLPP_PATH			= DEF(ILLGCC_PREFIX)gcc
+*_ILLGCC_*_RC_PATH			= ENV(GOBJCOPY)
+
+# Specify an alternative specs file that doesn't remove line number information
+# when pre-processing assembly language files.
+*_ILLGCC_*_PP_FLAGS                     = DEF(GCC_PP_FLAGS) -specs=ENV(WORKSPACE)/BaseTools/Conf/illumos.specs
+*_ILLGCC_*_ASLPP_FLAGS                  = DEF(GCC_ASLPP_FLAGS)
+*_ILLGCC_*_ASLCC_FLAGS                  = DEF(GCC_ASLCC_FLAGS)
+*_ILLGCC_*_VFRPP_FLAGS                  = DEF(GCC_VFRPP_FLAGS)
+*_ILLGCC_*_APP_FLAGS                    = DEF(GCC_PP_FLAGS)
+*_ILLGCC_*_ASL_FLAGS                    = DEF(IASL_FLAGS)
+*_ILLGCC_*_ASL_OUTFLAGS                 = DEF(IASL_OUTFLAGS)
+
+##################
+# ILLGCC IA32 definitions
+##################
+
+*_ILLGCC_IA32_ASLCC_FLAGS          = DEF(GCC_ASLCC_FLAGS) -m32
+*_ILLGCC_IA32_ASLDLINK_FLAGS       = DEF(ILLGCC_IA32_X64_ASLDLINK_FLAGS) -m elf_i386
+*_ILLGCC_IA32_ASM_FLAGS            = DEF(ILLGCC_ASM_FLAGS) -m32 --32 -march=i386
+*_ILLGCC_IA32_CC_FLAGS             = DEF(ILLGCC_IA32_CC_FLAGS) -Os
+*_ILLGCC_IA32_DLINK_FLAGS          = DEF(ILLGCC_IA32_X64_DLINK_FLAGS) -m elf_i386 --oformat=elf32-i386
+*_ILLGCC_IA32_RC_FLAGS             = DEF(GCC_IA32_RC_FLAGS)
+*_ILLGCC_IA32_OBJCOPY_FLAGS        =
+*_ILLGCC_IA32_NASM_FLAGS           = -f elf32
+
+##################
+# ILLGCC X64 definitions
+##################
+
+*_ILLGCC_X64_ASLCC_FLAGS          = DEF(GCC_ASLCC_FLAGS) -m64
+*_ILLGCC_X64_ASLDLINK_FLAGS       = DEF(ILLGCC_IA32_X64_ASLDLINK_FLAGS) -m elf_x86_64_sol2
+*_ILLGCC_X64_ASM_FLAGS            = DEF(ILLGCC_ASM_FLAGS) -m64 --64 -melf_x86_64_sol2
+*_ILLGCC_X64_CC_FLAGS             = DEF(ILLGCC_X64_CC_FLAGS)
+*_ILLGCC_X64_DLINK_FLAGS          = DEF(ILLGCC_X64_DLINK_FLAGS)
+*_ILLGCC_X64_RC_FLAGS             = DEF(GCC_X64_RC_FLAGS)
+*_ILLGCC_X64_OBJCOPY_FLAGS        =
+*_ILLGCC_X64_NASM_FLAGS           = -f elf64
+
 ####################################################################################
 #
 # GCC 4.5 - This configuration is used to compile under Linux to produce

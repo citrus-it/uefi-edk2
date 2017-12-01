@@ -1,0 +1,7 @@
+Build/
+Conf/.cache
+Conf/BuildEnv.sh
+Conf/build_rule.txt
+Conf/target.txt
+Conf/tools_def.txt
+BhyvePkg/Csm/BhyveCsm16/Bin/

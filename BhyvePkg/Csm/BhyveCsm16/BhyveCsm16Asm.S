@@ -368,7 +368,7 @@ CsmEntry:
 
         /*  Zero out the 24KB buffer. */
         push    %di
-        mov     $(6*(4096/4)), %ecx
+        mov     $6144, %ecx
         xor     %eax, %eax
         cld
         rep stos %eax,(%di)
