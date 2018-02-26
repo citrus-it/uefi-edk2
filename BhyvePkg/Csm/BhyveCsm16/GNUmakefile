@@ -40,7 +40,7 @@ OBJECTS    = Bin/BhyveCsm16Asm.o \
              Bin/Video.o \
              Bin/ter-u16n-IBM-CP437.o
 
-DEBUG_PORT = -DDEBUG_PORT=0x220
+DEBUG_PORT = -DDEBUG_PORT=0x3f8
 
 BUILD_DATE = \"$(shell date +%D)\"
 

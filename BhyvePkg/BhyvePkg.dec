@@ -43,7 +43,7 @@
 
   ## This flag is used to control the destination port for PlatformDebugLibIoPort
   #gUefiBhyvePkgTokenSpaceGuid.PcdDebugIoPort|0x220|UINT16|4
-  gUefiBhyvePkgTokenSpaceGuid.PcdDebugIoPort|0x2F8|UINT16|4
+  gUefiBhyvePkgTokenSpaceGuid.PcdDebugIoPort|0x3F8|UINT16|4
 
   ## This flag determines the Power Management Base Address of choice, written
   #  to PIIX4 function 3 offset 0x40-0x43 bits [15:6].
