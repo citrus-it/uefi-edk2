@@ -18,6 +18,18 @@ WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
 BOOLEAN mEnumBootDevice = FALSE;
 EFI_HII_HANDLE gBdsLibStringPackHandle = NULL;
 
+#if defined (MDE_CPU_X64)
+static   CHAR16  *bootfiles[]= {
+			        EFI_REMOVABLE_MEDIA_FILE_NAME_UBUNTUX64,
+				EFI_REMOVABLE_MEDIA_FILE_NAME,
+				EFI_REMOVABLE_MEDIA_FILE_NAME_DEBIANX64,
+			       };
+static EFI_DEVICE_PATH_PROTOCOL  *EFIBootFileDevicePath(EFI_HANDLE  *Handle);
+
+static EFI_STATUS LoadEFIBootFile(EFI_HANDLE *FH,
+		  		  EFI_IMAGE_DOS_HEADER *DosHeader,
+				  EFI_IMAGE_OPTIONAL_HEADER_PTR_UNION Hdr) ;
+#endif
 /**
   The constructor function register UNI strings into imageHandle.
   
@@ -2078,7 +2090,12 @@ BdsFindUsbDevice (
         // Load the default boot file \EFI\BOOT\boot{machinename}.EFI from removable Media
         //  machinename is ia32, ia64, x64, ...
         //
+
+#if defined (MDE_CPU_X64)
+	FullDevicePath = EFIBootFileDevicePath(&Handle);
+#else
         FullDevicePath = FileDevicePath (Handle, EFI_REMOVABLE_MEDIA_FILE_NAME);
+#endif
         if (FullDevicePath != NULL) {
           REPORT_STATUS_CODE (EFI_PROGRESS_CODE, PcdGet32 (PcdProgressCodeOsLoaderLoad));
           Status = gBS->LoadImage (
@@ -2382,7 +2399,12 @@ BdsLibBootViaBootOption (
         // Load the default boot file \EFI\BOOT\boot{machinename}.EFI from removable Media
         //  machinename is ia32, ia64, x64, ...
         //
+
+#if defined (MDE_CPU_X64)
+        FilePath =  EFIBootFileDevicePath(&Handle);
+#else
         FilePath = FileDevicePath (Handle, EFI_REMOVABLE_MEDIA_FILE_NAME);
+#endif
         if (FilePath != NULL) {
           REPORT_STATUS_CODE (EFI_PROGRESS_CODE, PcdGet32 (PcdProgressCodeOsLoaderLoad));
           Status = gBS->LoadImage (
@@ -3340,12 +3362,22 @@ BdsLibEnumerateAllBootOption (
     //
     Hdr.Union  = &HdrData;
     NeedDelete = TRUE;
+
+#if defined (MDE_CPU_X64)
+    Status     = LoadEFIBootFile(
+                   FileSystemHandles[Index],
+                   &DosHeader,
+                   Hdr);
+
+#else
     Status     = BdsLibGetImageHeader (
                    FileSystemHandles[Index],
                    EFI_REMOVABLE_MEDIA_FILE_NAME,
                    &DosHeader,
                    Hdr
                    );
+#endif
+
     if (!EFI_ERROR (Status) &&
         EFI_IMAGE_MACHINE_TYPE_SUPPORTED (Hdr.Pe32->FileHeader.Machine) &&
         Hdr.Pe32->OptionalHeader.Subsystem == EFI_IMAGE_SUBSYSTEM_EFI_APPLICATION) {
@@ -3724,13 +3756,23 @@ BdsLibGetBootableHandle (
       //  machinename is ia32, ia64, x64, ...
       //
       Hdr.Union = &HdrData;
-      Status = BdsLibGetImageHeader (
-                 SimpleFileSystemHandles[Index],
-                 EFI_REMOVABLE_MEDIA_FILE_NAME,
-                 &DosHeader,
-                 Hdr
-                 );
-      if (!EFI_ERROR (Status) &&
+
+#if defined (MDE_CPU_X64)
+      Status = LoadEFIBootFile(
+                   SimpleFileSystemHandles[Index],
+                   &DosHeader,
+                   Hdr);
+#else
+
+     Status = BdsLibGetImageHeader (
+                SimpleFileSystemHandles[Index],
+                EFI_REMOVABLE_MEDIA_FILE_NAME,
+                &DosHeader,
+                Hdr
+                );
+#endif
+
+     if (!EFI_ERROR (Status) &&
         EFI_IMAGE_MACHINE_TYPE_SUPPORTED (Hdr.Pe32->FileHeader.Machine) &&
         Hdr.Pe32->OptionalHeader.Subsystem == EFI_IMAGE_SUBSYSTEM_EFI_APPLICATION) {
         ReturnHandle = SimpleFileSystemHandles[Index];
@@ -4363,3 +4405,35 @@ BdsLibUpdateFvFileDevicePath (
   }
   return EFI_NOT_FOUND;
 }
+
+#if defined (MDE_CPU_X64)
+
+static EFI_DEVICE_PATH_PROTOCOL  *EFIBootFileDevicePath( EFI_HANDLE  *Handle ) {
+
+       static EFI_DEVICE_PATH_PROTOCOL *FullDevicePath = NULL;
+       int bindex=0;
+       int len = sizeof(bootfiles) / sizeof(CHAR16*);
+       for ( bindex = 0; bindex <= len - 1; bindex++) {
+         FullDevicePath = FileDevicePath (*Handle, bootfiles[bindex]);
+       }
+        return FullDevicePath;
+}
+
+static EFI_STATUS LoadEFIBootFile( EFI_HANDLE *FH,
+		   		   EFI_IMAGE_DOS_HEADER *DosHeader,
+				   EFI_IMAGE_OPTIONAL_HEADER_PTR_UNION Hdr) {
+	static EFI_STATUS  status = EFI_NOT_FOUND;
+        int bindex=0;
+        int len =  sizeof(bootfiles) / sizeof(CHAR16*);
+        for ( bindex = 0; bindex <= len - 1; bindex++ ) {
+		status  = BdsLibGetImageHeader (
+       		          FH,
+               		  bootfiles[bindex],
+	                  DosHeader,
+        	          Hdr);
+	    if (status == EFI_SUCCESS )
+       	         break;
+        }
+        return status;
+}
+#endif
