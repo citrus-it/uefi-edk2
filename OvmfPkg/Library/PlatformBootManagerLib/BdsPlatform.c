@@ -1070,6 +1070,10 @@ SetPciIntLine (
     // Final PciHostIrqs[] index calculation depends on the platform
     // and should match SeaBIOS src/fw/pciinit.c *_pci_slot_get_irq()
     //
+
+#ifndef NOT_BHYVE
+    Idx -= 1;
+#else
     switch (mHostBridgeDevId) {
       case 0x1275: // BHYVE
       case INTEL_82441_DEVICE_ID:
@@ -1095,6 +1099,7 @@ SetPciIntLine (
       default:
         ASSERT (FALSE); // should never get here
     }
+#endif
     Idx %= ARRAY_SIZE (PciHostIrqs);
     IrqLine = PciHostIrqs[Idx];
 

@@ -33,6 +33,7 @@ AcpiTimerLibConstructor (
   VOID
   )
 {
+#ifdef NOT_BHYVE
   UINT16 HostBridgeDevId;
   UINTN Pmba;
   UINT32 PmbaAndVal;
@@ -84,6 +85,8 @@ AcpiTimerLibConstructor (
     PciOr8 (AcpiCtlReg, AcpiEnBit);
   }
 
+#endif
+
   return RETURN_SUCCESS;
 }
 
@@ -101,6 +104,9 @@ InternalAcpiGetTimerTick (
   VOID
   )
 {
+#ifndef NOT_BHYVE
+  return IoRead32(0x408);
+#else
   UINT16 HostBridgeDevId;
   UINTN Pmba;
 
@@ -128,4 +134,5 @@ InternalAcpiGetTimerTick (
   //   Read PMBA to read and return the current ACPI timer value.
   //
   return IoRead32 ((PciRead32 (Pmba) & ~PMBA_RTE) + ACPI_TIMER_OFFSET);
+#endif
 }
