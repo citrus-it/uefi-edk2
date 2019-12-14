@@ -1,0 +1,118 @@
+#!/bin/bash
+
+# Copyright 2020 OmniOS Community Edition (OmniOSce) Association.
+
+usage() {
+	echo "Usage: $0 [-csm] [-v] <clean|RELEASE|DEBUG>"
+	exit 1
+}
+
+verbose=0
+csm=0
+while [[ "$1" = -* ]]; do
+	[ "$1" = -csm ] && shift && csm=1
+	[ "$1" = -v ] && shift && verbose=1
+done
+
+if [ $csm -eq 1 ]; then
+	echo "This branch does not currently support building the CSM variant"
+	exit 1
+fi
+
+clean=0
+case "$1" in
+	DEBUG)		flavour=DEBUG
+			dport=0x3f8
+			level=INFO
+			 ;;
+	RELEASE)	flavour=RELEASE
+			dport=0x2f8
+			level=CRIT
+			;;
+	clean)		clean=1 ;;
+	*)		usage ;;
+esac
+shift
+[ -n "$1" ] && usage
+
+: "${GCCVER:=7}"
+: "${GCCPATH:=/opt/gcc/$GCCVER}"
+: "${GCC:=$GCCPATH/bin/gcc}"
+: "${GXX:=$GCCPATH/bin/g++}"
+: "${GMAKE:=/usr/bin/gmake}"
+: "${GAS:=/usr/bin/gas}"
+: "${GAR:=/usr/bin/gar}"
+: "${GLD:=/usr/bin/gld}"
+: "${GOBJCOPY:=/usr/bin/gobjcopy}"
+
+export GCCVER GCCPATH GCC GXX GMAKE GAS GAR GLD GOBJCOPY
+
+MAKE_ARGS="
+    AS=$GAS
+    AR=$GAR
+    LD=$GLD
+    OBJCOPY=$GOBJCOPY
+    CC=$GCC BUILD_CC=$GCC
+    CXX=$GXX BUILD_CXX=$GXX
+    GCCPATH=$GCCPATH
+"
+
+ILLGCC_BIN=$GCCPATH/bin/
+BUILD_ARGS="-DDEBUG_ON_SERIAL_PORT=TRUE -DFD_SIZE_2MB -DHTTP_BOOT_ENABLE=TRUE"
+PYTHON3_ENABLE=TRUE
+[ $verbose -eq 1 ] && BUILD_ARGS+=" -v"
+
+export MAKE_ARGS ILLGCC_BIN BUILD_ARGS PYTHON3_ENABLE
+
+rm -rf Conf/{target,build_rule,tools_def}.txt Conf/.cache
+
+if [ $clean -eq 1 ]; then
+	gmake -j1 $MAKE_ARGS HOST_ARCH=X64 ARCH=X64 -C BaseTools clean
+	rm -rf Build/
+	exit 0
+fi
+
+gmake -j1 $MAKE_ARGS HOST_ARCH=X64 ARCH=X64 -C BaseTools \
+    || exit 1
+
+function save_files {
+	cp -p BhyvePkg/BhyvePkg.dec{,~qb}
+	if [ $csm -eq 1 ]; then
+		cp -p BhyvePkg/Csm/BhyveCsm16/GNUmakefile{,~qb}
+		cp -p BhyvePkg/Csm/BhyveCsm16/Printf.c{,~qb}
+	fi
+}
+
+function restore_files {
+	echo "Restoring files..."
+	mv BhyvePkg/BhyvePkg.dec{~qb,}
+	if [ $csm -eq 1 ]; then
+		mv BhyvePkg/Csm/BhyveCsm16/GNUmakefile{~qb,}
+		mv BhyvePkg/Csm/BhyveCsm16/Printf.c{~qb,}
+	fi
+}
+
+save_files
+trap restore_files EXIT ERR
+set -e
+
+sed -i "/PcdDebugIoPort|0x[0-9A-Fa-f]/s/0x[0-9A-Fa-f]*/$dport/" \
+    BhyvePkg/BhyvePkg.dec
+if [ $csm -eq 1 ]; then
+	sed -i "/DEBUG_PORT=0x/s/0x.*/$dport/" \
+	    BhyvePkg/Csm/BhyveCsm16/GNUmakefile
+	sed -i "/DebugLevel = DBG/s/DBG_.*/DBG_$level;/" \
+	    BhyvePkg/Csm/BhyveCsm16/Printf.c
+fi
+
+source edksetup.sh
+
+if [ "$csm" -eq 1 ]; then
+	BUILD_ARGS+=" -DCSM_ENABLE=TRUE"
+	gmake $MAKE_ARGS -C BhyvePkg/Csm/BhyveCsm16 clean all
+fi
+
+`which build` -n 1 \
+	-t ILLGCC -a X64 -b $flavour \
+	-p BhyvePkg/BhyvePkgX64.dsc $BUILD_ARGS
+
