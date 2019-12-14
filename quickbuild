@@ -1,0 +1,84 @@
+#!/bin/bash
+
+# This file and its contents are supplied under the terms of the
+# Common Development and Distribution License ("CDDL"), version 1.0.
+# You may only use this file in accordance with the terms of version
+# 1.0 of the CDDL.
+#
+# A full copy of the text of the CDDL should have accompanied this
+# source. A copy of the CDDL is also available via the Internet at
+# http://www.illumos.org/license/CDDL.
+
+# Copyright 2019 OmniOS Community Edition (OmniOSce) Association.
+
+#
+# This a script for quickly building DEBUG firmware during development.
+#
+
+: "${GCCVER:=8}"
+: "${GCCPATH:=/opt/gcc-$GCCVER}"
+: "${GCC:=$GCCPATH/bin/gcc}"
+: "${GXX:=$GCCPATH/bin/g++}"
+
+export MAKE_ARGS="
+    AS=/usr/bin/gas
+    AR=/usr/bin/gar
+    LD=/usr/bin/gld
+    OBJCOPY=/usr/bin/gobjcopy
+    CC=$GCC BUILD_CC=$GCC
+    CXX=$GXX BUILD_CXX=$GXX
+"
+
+git submodule update --init --progress .
+
+export OOGCC_BIN=$GCCPATH/bin/
+export PYTHON3_ENABLE=TRUE
+
+BUILD_ARGS="-DDEBUG_ON_SERIAL_PORT=TRUE -DFD_SIZE_2MB -DHTTP_BOOT_ENABLE=TRUE"
+export BUILD_ARGS
+
+rm -rf Conf/{target,build_rule,tools_def}.txt Conf/.cache
+
+if [ "$1" = "-clean" ]; then
+	gmake $MAKE_ARGS HOST_ARCH=X64 ARCH=X64 -C BaseTools clean
+	rm -rf Build/
+	exit 0
+fi
+
+function save_files {
+	cp -p OvmfPkg/OvmfPkg.dec{,~qb}
+	cp -p OvmfPkg/Csm/BhyveCsm16/GNUmakefile{,~qb}
+	cp -p OvmfPkg/Csm/BhyveCsm16/Printf.c{,~qb}
+}
+
+function restore_files {
+	echo "Restoring files..."
+	mv OvmfPkg/OvmfPkg.dec{~qb,}
+	mv OvmfPkg/Csm/BhyveCsm16/GNUmakefile{~qb,}
+	mv OvmfPkg/Csm/BhyveCsm16/Printf.c{~qb,}
+}
+
+save_files
+set -e
+trap restore_files EXIT ERR
+
+sed -i "/PcdDebugIoPort|0x[0-9A-Fa-f]/s/0x[0-9A-Fa-f]*/0x3f8/" \
+    OvmfPkg/OvmfPkg.dec
+sed -i "/DEBUG_PORT=0x/s/0x.*/0x3f8/" OvmfPkg/Csm/BhyveCsm16/GNUmakefile
+sed -i "/DebugLevel = 1/s/= 1/= 3/" OvmfPkg/Csm/BhyveCsm16/Printf.c
+
+gmake $MAKE_ARGS HOST_ARCH=X64 ARCH=X64 -C BaseTools
+
+if [ "$1" = "-csm" ]; then
+	shift
+	BUILD_ARGS+=" -DCSM_ENABLE=TRUE"
+	source edksetup.sh
+	gmake $MAKE_ARGS -C OvmfPkg/Csm/BhyveCsm16 all
+fi
+
+source edksetup.sh
+
+`which build` -n1 \
+	-t OOGCC -a X64 -b DEBUG \
+	-p OvmfPkg/OvmfPkgX64.dsc $BUILD_ARGS
+
