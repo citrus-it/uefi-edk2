@@ -3264,7 +3264,71 @@ DEFINE GCC5_ASLCC_FLAGS              = DEF(GCC49_ASLCC_FLAGS) -fno-lto
 *_FBSDGCC_X64_RC_FLAGS             = DEF(GCC_X64_RC_FLAGS)
 *_FBSDGCC_X64_OBJCOPY_FLAGS        = 
 
-####################################################################################
+#############################################################################
+#
+# OOGCC       -- OmniOS
+#         This configuration is used to compile under OmniOS to produce
+#         PE/COFF binaries using GCC 8
+#
+#############################################################################
+
+
+DEFINE OOGCC_PREFIX		= ENV(OOGCC_BIN)
+DEFINE OOGCC_CC			= DEF(OOGCC_PREFIX)/gcc
+DEFINE OOGCC_AR			= /usr/bin/gar
+# OmniOS gcc uses the illumos linker so we need to explicitly specify
+# the GNU linker
+DEFINE OOGCC_LD			= /usr/bin/gld
+DEFINE OOGCC_OBJCOPY		= /usr/bin/gobjcopy
+DEFINE OOGCC_MAKE		= /usr/bin/gmake
+
+*_OOGCC_*_*_FAMILY		= GCC
+
+*_OOGCC_*_ASL_PATH		= DEF(UNIX_IASL_BIN)
+*_OOGCC_*_MAKE_PATH		= DEF(OOGCC_MAKE)
+*_OOGCC_*_CC_PATH		= DEF(OOGCC_CC)
+*_OOGCC_*_ASM_PATH		= DEF(OOGCC_CC)
+*_OOGCC_*_PP_PATH		= DEF(OOGCC_CC)
+*_OOGCC_*_VFRPP_PATH		= DEF(OOGCC_CC)
+*_OOGCC_*_ASLCC_PATH		= DEF(OOGCC_CC)
+*_OOGCC_*_ASLPP_PATH		= DEF(OOGCC_CC)
+*_OOGCC_*_SLINK_PATH		= DEF(OOGCC_AR)
+*_OOGCC_*_DLINK_PATH		= DEF(OOGCC_LD)
+*_OOGCC_*_ASLDLINK_PATH		= DEF(OOGCC_LD)
+*_OOGCC_*_RC_PATH		= DEF(OOGCC_OBJCOPY)
+*_OOGCC_*_OBJCOPY_PATH		= DEF(OOGCC_OBJCOPY)
+
+*_OOGCC_*_ASLPP_FLAGS		= DEF(GCC_ASLPP_FLAGS)
+*_OOGCC_*_ASLCC_FLAGS		= DEF(GCC_ASLCC_FLAGS)
+*_OOGCC_*_VFRPP_FLAGS		= DEF(GCC_VFRPP_FLAGS)
+*_OOGCC_*_APP_FLAGS		=
+*_OOGCC_*_ASL_FLAGS		= DEF(IASL_FLAGS)
+*_OOGCC_*_ASL_OUTFLAGS		= DEF(IASL_OUTFLAGS)
+
+# Specify an alternative specs file that doesn't remove line number information
+# when pre-processing assembly language files.
+*_OOGCC_*_PP_FLAGS		= DEF(GCC_PP_FLAGS) -specs=ENV(WORKSPACE)/BaseTools/Conf/omnios.specs
+
+########################
+# OmniOS X64 definitions
+########################
+
+# Since we are not using gcc as a wrapper for the linker and the pre-defined
+# arguments use "-Wl", we need to explicitly state the required options
+# longhand.
+*_OOGCC_X64_ASLDLINK_FLAGS	= -melf_x86_64_sol2 -nostdlib -n -q --gc-sections -z common-page-size=0x40 --defsym=PECOFF_HEADER_SIZE=0 --script=$(EDK_TOOLS_PATH)/Scripts/GccBase.lds --entry ReferenceAcpiTable -u ReferenceAcpiTable
+*_OOGCC_X64_DLINK_FLAGS		= -nostdlib -n -q --gc-sections -z common-page-size=0x40 --entry $(IMAGE_ENTRY_POINT) -u $(IMAGE_ENTRY_POINT) -Map $(DEST_DIR_DEBUG)/$(BASE_NAME).map --whole-archive -flto -Os
+*_OOGCC_X64_DLINK2_FLAGS	= -melf_x86_64_sol2 --oformat=elf64-x86-64-sol2 --defsym=PECOFF_HEADER_SIZE=0x228 --script=$(EDK_TOOLS_PATH)/Scripts/GccBase.lds
+
+*_OOGCC_X64_ASLCC_FLAGS		= DEF(GCC5_ASLCC_FLAGS) -m64
+*_OOGCC_X64_ASM_FLAGS		= DEF(GCC5_ASM_FLAGS) -m64 -melf_x86_64_sol2
+*_OOGCC_X64_RC_FLAGS		= DEF(GCC_X64_RC_FLAGS) -O elf64-x86-64-sol2
+*_OOGCC_X64_OBJCOPY_FLAGS	=
+*_OOGCC_X64_NASM_FLAGS		= -f elf64
+*_OOGCC_X64_CC_FLAGS		= DEF(GCC5_X64_CC_FLAGS) -flto -DUSING_LTO -Os -Wno-unused-but-set-variable -Wno-unused-const-variable
+
+
+#################################################################################
 #
 # GCC 4.8 - This configuration is used to compile under Linux to produce
 #           PE/COFF binaries using GCC 4.8.

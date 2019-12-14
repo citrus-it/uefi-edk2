@@ -43,6 +43,7 @@ endif
 CYGWIN:=$(findstring CYGWIN, $(shell uname -s))
 LINUX:=$(findstring Linux, $(shell uname -s))
 DARWIN:=$(findstring Darwin, $(shell uname -s))
+SUNOS:=$(findstring SunOS, $(shell uname -s))
 
 BUILD_CC ?= gcc
 BUILD_CXX ?= g++
@@ -97,6 +98,17 @@ endif
 # keep BUILD_OPTFLAGS last
 BUILD_CFLAGS   += $(BUILD_OPTFLAGS)
 BUILD_CXXFLAGS += $(BUILD_OPTFLAGS)
+
+ifeq ($(ARCH), X64)
+ifeq ($(SUNOS),SunOS)
+  #BUILD_CFLAGS=$(BUILD_CFLAGS:-Werror=}
+  # New warnings from newer GCC version
+  BUILD_CFLAGS += -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast
+  CFLAGS   += -m64
+  CPPFLAGS   += -m64
+  LFLAGS   += -m64
+endif
+endif
   
 # keep EXTRA_LDFLAGS last
 BUILD_LFLAGS += $(EXTRA_LDFLAGS)
