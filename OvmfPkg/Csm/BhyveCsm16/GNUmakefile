@@ -54,8 +54,10 @@ init:
 Bin/%.c: %.bdf
 	gawk -f bdf_to_c.awk $< > $@
 
+# To be investigated. CSM must be built with gcc4 otherwise the module
+# triple-faults while trying to set up selectors.
 Bin/%.o: %.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $@ $<
+	/opt/gcc-4.4.4/bin/gcc $(CFLAGS) $(CPPFLAGS) -c -o $@ $<
 
 Bin/%.o: %.S
 	$(CC) $(ASFLAGS) $(CPPFLAGS) -c -o $@ $<
