@@ -35,15 +35,15 @@ esac
 shift
 [ -n "$1" ] && usage
 
-: "${GCCVER:=7}"
-: "${GCCPATH:=/opt/gcc/$GCCVER}"
-: "${GCC:=$GCCPATH/bin/gcc}"
-: "${GXX:=$GCCPATH/bin/g++}"
-: "${GMAKE:=/usr/bin/gmake}"
-: "${GAS:=/usr/bin/gas}"
-: "${GAR:=/usr/bin/gar}"
-: "${GLD:=/usr/bin/gld}"
-: "${GOBJCOPY:=/usr/bin/gobjcopy}"
+GCCVER=7
+GCCPATH=/opt/gcc-$GCCVER
+GCC=$GCCPATH/bin/gcc
+GXX=$GCCPATH/bin/g++
+GMAKE=/usr/bin/gmake
+GAS=/usr/bin/gas
+GAR=/usr/bin/gar
+GLD=/usr/bin/gld
+GOBJCOPY=/usr/bin/gobjcopy
 
 export GCCVER GCCPATH GCC GXX GMAKE GAS GAR GLD GOBJCOPY
 
@@ -64,7 +64,7 @@ PYTHON3_ENABLE=TRUE
 
 export MAKE_ARGS ILLGCC_BIN BUILD_ARGS PYTHON3_ENABLE
 
-rm -rf Conf/{target,build_rule,tools_def}.txt Conf/.cache
+#rm -rf Conf/{target,build_rule,tools_def}.txt Conf/.cache
 
 if [ $clean -eq 1 ]; then
 	gmake -j1 $MAKE_ARGS HOST_ARCH=X64 ARCH=X64 -C BaseTools clean
@@ -112,7 +112,7 @@ if [ "$csm" -eq 1 ]; then
 	gmake $MAKE_ARGS -C BhyvePkg/Csm/BhyveCsm16 clean all
 fi
 
-`which build` -n 1 \
+`which build` -n 0 \
 	-t ILLGCC -a X64 -b $flavour \
 	-p BhyvePkg/BhyvePkgX64.dsc $BUILD_ARGS
 

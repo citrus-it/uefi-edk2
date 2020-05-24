@@ -61,6 +61,7 @@ STATIC PAM_REGISTER_VALUE  mRegisterValues440[] = {
   {PMC_REGISTER_PIIX4 (PIIX4_PAM0), 0x10, 0x20}
 };
 
+#ifdef NOT_BHYVE
 STATIC PAM_REGISTER_VALUE  mRegisterValuesQ35[] = {
   {DRAMC_REGISTER_Q35 (MCH_PAM1), 0x01, 0x02},
   {DRAMC_REGISTER_Q35 (MCH_PAM1), 0x10, 0x20},
@@ -76,6 +77,7 @@ STATIC PAM_REGISTER_VALUE  mRegisterValuesQ35[] = {
   {DRAMC_REGISTER_Q35 (MCH_PAM6), 0x10, 0x20},
   {DRAMC_REGISTER_Q35 (MCH_PAM0), 0x10, 0x20}
 };
+#endif
 
 STATIC PAM_REGISTER_VALUE *mRegisterValues;
 
@@ -463,8 +465,12 @@ LegacyRegionInit (
   )
 {
   EFI_STATUS  Status;
-  UINT16      HostBridgeDevId;
 
+#ifndef NOT_BHYVE
+    mRegisterValues = mRegisterValues440;
+#else
+
+  UINT16      HostBridgeDevId;
   //
   // Query Host Bridge DID to determine platform type
   //
@@ -482,6 +488,7 @@ LegacyRegionInit (
     ASSERT (FALSE);
     return RETURN_UNSUPPORTED;
   }
+#endif
 
   //
   // Install the Legacy Region Protocol on a new handle

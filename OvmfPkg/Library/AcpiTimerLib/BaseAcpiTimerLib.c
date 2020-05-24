@@ -29,6 +29,12 @@ AcpiTimerLibConstructor (
   VOID
   )
 {
+#ifndef NOT_BHYVE
+
+      mAcpiTimerIoAddr = 0x408;
+
+#else
+
   UINT16 HostBridgeDevId;
   UINTN Pmba;
   UINT32 PmbaAndVal;
@@ -79,6 +85,9 @@ AcpiTimerLibConstructor (
   }
 
   mAcpiTimerIoAddr = (PciRead32 (Pmba) & ~PMBA_RTE) + ACPI_TIMER_OFFSET;
+
+#endif
+
   return RETURN_SUCCESS;
 }
 

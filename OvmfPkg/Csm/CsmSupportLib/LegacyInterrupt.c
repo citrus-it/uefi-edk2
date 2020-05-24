@@ -172,7 +172,6 @@ LegacyInterruptInstall (
   VOID
   )
 {
-  UINT16      HostBridgeDevId;
   EFI_STATUS  Status;
 
   //
@@ -183,6 +182,11 @@ LegacyInterruptInstall (
   //
   // Query Host Bridge DID to determine platform type, then set device number
   //
+#ifndef NOT_BHYVE
+  mLegacyInterruptDevice = LEGACY_INT_DEV_PIIX4;
+#else
+  UINT16      HostBridgeDevId;
+
   HostBridgeDevId = PcdGet16 (PcdOvmfHostBridgePciDevId);
   switch (HostBridgeDevId) {
     case INTEL_82441_DEVICE_ID:
@@ -197,6 +201,7 @@ LegacyInterruptInstall (
       ASSERT (FALSE);
       return EFI_UNSUPPORTED;
   }
+#endif
 
   //
   // Make a new handle and install the protocol

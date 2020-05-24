@@ -26,6 +26,17 @@
 // Library internal functions
 //
 
+void
+pause(int s)
+{
+	for (int i = 0; i < s; i++) {
+	    for (int j = 0; j < 1000; j++)
+	       for (int k = 0; k < 1000000; k++)
+		       __asm__ __volatile__("");
+	    DEBUG ((DEBUG_INFO, "Pause\n"));
+	}
+}
+
 /**
   Determine if the standard CPU signature is "AuthenticAMD".
 
@@ -63,6 +74,9 @@ LocalApicBaseAddressMsrSupported (
   UINT32  RegEax;
   UINTN   FamilyId;
 
+DEBUG ((DEBUG_INFO, "LocalApicBaseAddressMsrSupported\n"));
+
+
   AsmCpuid (1, &RegEax, NULL, NULL, NULL);
   FamilyId = BitFieldRead32 (RegEax, 8, 11);
   if (FamilyId == 0x04 || FamilyId == 0x05) {
@@ -70,8 +84,10 @@ LocalApicBaseAddressMsrSupported (
     // CPUs with a FamilyId of 0x04 or 0x05 do not support the
     // Local APIC Base Address MSR
     //
+DEBUG ((DEBUG_INFO, "LocalApicBaseAddressMsrSupported = FALSE\n"));
     return FALSE;
   }
+DEBUG ((DEBUG_INFO, "LocalApicBaseAddressMsrSupported = TRUE\n"));
   return TRUE;
 }
 
@@ -99,8 +115,13 @@ GetLocalApicBaseAddress (
 
   ApicBaseMsr.Uint64 = AsmReadMsr64 (MSR_IA32_APIC_BASE);
 
-  return (UINTN)(LShiftU64 ((UINT64) ApicBaseMsr.Bits.ApicBaseHi, 32)) +
+  UINTN ba = (UINTN)(LShiftU64 ((UINT64) ApicBaseMsr.Bits.ApicBaseHi, 32)) +
            (((UINTN)ApicBaseMsr.Bits.ApicBase) << 12);
+
+DEBUG ((DEBUG_INFO, "GetLocalApicBaseAddress =  %x\n", ba));
+pause(2);
+
+  return ba;
 }
 
 /**
@@ -155,10 +176,23 @@ ReadLocalApicReg (
   IN UINTN  MmioOffset
   )
 {
+DEBUG ((DEBUG_INFO, "ReadLocalApicReg(%d)\n", MmioOffset));
   ASSERT ((MmioOffset & 0xf) == 0);
   ASSERT (GetApicMode () == LOCAL_APIC_MODE_XAPIC);
+pause(1);
+DEBUG ((DEBUG_INFO, "AA ReadLocalApicReg(%d)\n", MmioOffset));
 
-  return MmioRead32 (GetLocalApicBaseAddress() + MmioOffset);
+UINT64 a = GetLocalApicBaseAddress() + MmioOffset;
+
+DEBUG ((DEBUG_INFO, "ReadLocalApicReg(%x)\n", a));
+
+  UINT32 l = MmioRead32 (a);
+
+pause(1);
+DEBUG ((DEBUG_INFO, "MmioRead32 returned %x\n", l));
+
+   return l;
+
 }
 
 /**
@@ -264,23 +298,29 @@ GetApicMode (
   VOID
   )
 {
-  DEBUG_CODE (
-    {
       MSR_IA32_APIC_BASE_REGISTER  ApicBaseMsr;
 
       //
       // Check to see if the CPU supports the APIC Base Address MSR
       //
       if (LocalApicBaseAddressMsrSupported ()) {
+
+DEBUG ((DEBUG_INFO, "Reading MSR %p\n", MSR_IA32_APIC_BASE));
+
+pause(2);
+
         ApicBaseMsr.Uint64 = AsmReadMsr64 (MSR_IA32_APIC_BASE);
+
+DEBUG ((DEBUG_INFO, "Got %x\n", ApicBaseMsr.Uint64));
         //
         // Local APIC should have been enabled
         //
         ASSERT (ApicBaseMsr.Bits.EN != 0);
+DEBUG ((DEBUG_INFO, "ENABLED\n"));
         ASSERT (ApicBaseMsr.Bits.EXTD == 0);
+DEBUG ((DEBUG_INFO, "EXTD\n"));
       }
-    }
-  );
+DEBUG ((DEBUG_INFO, "returning XAPIC\n"));
   return LOCAL_APIC_MODE_XAPIC;
 }
 
@@ -609,18 +649,27 @@ InitializeLocalApicSoftwareEnable (
   //
   // Set local APIC software-enabled bit.
   //
+
+
+DEBUG ((DEBUG_INFO, "InitializeLocalApicSoftwareEnable(%d)\n", Enable));
+pause(2);
+
   Svr.Uint32 = ReadLocalApicReg (XAPIC_SPURIOUS_VECTOR_OFFSET);
+DEBUG ((DEBUG_INFO, "Read %d\n", Svr.Uint32));
   if (Enable) {
     if (Svr.Bits.SoftwareEnable == 0) {
       Svr.Bits.SoftwareEnable = 1;
+DEBUG ((DEBUG_INFO, "Writing %d\n", Svr.Uint32));
       WriteLocalApicReg (XAPIC_SPURIOUS_VECTOR_OFFSET, Svr.Uint32);
     }
   } else {
     if (Svr.Bits.SoftwareEnable == 1) {
       Svr.Bits.SoftwareEnable = 0;
+DEBUG ((DEBUG_INFO, "Writing %d\n", Svr.Uint32));
       WriteLocalApicReg (XAPIC_SPURIOUS_VECTOR_OFFSET, Svr.Uint32);
     }
   }
+DEBUG ((DEBUG_INFO, "Written\n"));
 }
 
 /**
@@ -743,15 +792,20 @@ InitializeApicTimer (
   LOCAL_APIC_LVT_TIMER LvtTimer;
   UINT32               Divisor;
 
+DEBUG ((DEBUG_INFO, "InitializeApicTimer()\n"));
+
   //
   // Ensure local APIC is in software-enabled state.
   //
   InitializeLocalApicSoftwareEnable (TRUE);
 
+DEBUG ((DEBUG_INFO, "Software enabled\n"));
+
   //
   // Program init-count register.
   //
   WriteLocalApicReg (XAPIC_TIMER_INIT_COUNT_OFFSET, InitCount);
+DEBUG ((DEBUG_INFO, "Programmed counter\n"));
 
   if (DivideValue != 0) {
     ASSERT (DivideValue <= 128);
@@ -761,12 +815,15 @@ InitializeApicTimer (
     Dcr.Uint32 = ReadLocalApicReg (XAPIC_TIMER_DIVIDE_CONFIGURATION_OFFSET);
     Dcr.Bits.DivideValue1 = (Divisor & 0x3);
     Dcr.Bits.DivideValue2 = (Divisor >> 2);
+DEBUG ((DEBUG_INFO, "Programming divide = %d\n", Dcr.Uint32));
     WriteLocalApicReg (XAPIC_TIMER_DIVIDE_CONFIGURATION_OFFSET, Dcr.Uint32);
+DEBUG ((DEBUG_INFO, "Programmed divide\n"));
   }
 
   //
   // Enable APIC timer interrupt with specified timer mode.
   //
+DEBUG ((DEBUG_INFO, "Reading mode\n"));
   LvtTimer.Uint32 = ReadLocalApicReg (XAPIC_LVT_TIMER_OFFSET);
   if (PeriodicMode) {
     LvtTimer.Bits.TimerMode = 1;
@@ -775,7 +832,9 @@ InitializeApicTimer (
   }
   LvtTimer.Bits.Mask = 0;
   LvtTimer.Bits.Vector = Vector;
+DEBUG ((DEBUG_INFO, "Writing offset: %d\n", LvtTimer.Uint32));
   WriteLocalApicReg (XAPIC_LVT_TIMER_OFFSET, LvtTimer.Uint32);
+DEBUG ((DEBUG_INFO, "Wrote offset\n"));
 }
 
 /**

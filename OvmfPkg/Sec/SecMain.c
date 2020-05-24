@@ -751,18 +751,23 @@ SecCoreStartupWithStack (
   //
   InitializeFloatingPointUnits ();
 
+  DEBUG ((DEBUG_INFO, "FPUInit\n"));
+
   //
   // Initialize IDT
   //
   IdtTableInStack.PeiService = NULL;
   for (Index = 0; Index < SEC_IDT_ENTRY_COUNT; Index ++) {
+DEBUG ((DEBUG_INFO, "IDT %d\n", Index));
     CopyMem (&IdtTableInStack.IdtTable[Index], &mIdtEntryTemplate, sizeof (mIdtEntryTemplate));
   }
 
   IdtDescriptor.Base  = (UINTN)&IdtTableInStack.IdtTable;
   IdtDescriptor.Limit = (UINT16)(sizeof (IdtTableInStack.IdtTable) - 1);
 
+DEBUG ((DEBUG_INFO, "IDT AsmWriteIdtr\n"));
   AsmWriteIdtr (&IdtDescriptor);
+DEBUG ((DEBUG_INFO, "IDT AsmWriteIdtr done\n"));
 
 #if defined (MDE_CPU_X64)
   //
@@ -801,11 +806,22 @@ SecCoreStartupWithStack (
   SecCoreData.BootFirmwareVolumeBase = BootFv;
   SecCoreData.BootFirmwareVolumeSize = (UINTN) BootFv->FvLength;
 
+DEBUG ((DEBUG_INFO, "Mask 8259\n"));
+
   //
   // Make sure the 8259 is masked before initializing the Debug Agent and the debug timer is enabled
   //
   IoWrite8 (0x21, 0xff);
   IoWrite8 (0xA1, 0xff);
+
+DEBUG ((DEBUG_INFO, "Mask 8259 done\n"));
+
+for (int i = 0; i < 10; i++) {
+    for (int j = 0; j < 1000; j++)
+	for (int k = 0; k < 1000000; k++)
+		__asm__ __volatile__("");
+    DEBUG ((DEBUG_INFO, "Pause\n"));
+}
 
   //
   // Initialize Local APIC Timer hardware and disable Local APIC Timer
@@ -813,12 +829,15 @@ SecCoreStartupWithStack (
   // enabled.
   //
   InitializeApicTimer (0, MAX_UINT32, TRUE, 5);
+DEBUG ((DEBUG_INFO, "APIC init\n"));
   DisableApicTimerInterrupt ();
+DEBUG ((DEBUG_INFO, "APIC Intr disable\n"));
 
   //
   // Initialize Debug Agent to support source level debug in SEC/PEI phases before memory ready.
   //
   InitializeDebugAgent (DEBUG_AGENT_INIT_PREMEM_SEC, &SecCoreData, SecStartupPhase2);
+DEBUG ((DEBUG_INFO, "Done\n"));
 }
 
 /**
