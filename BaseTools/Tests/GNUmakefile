@@ -14,7 +14,7 @@
 all: test
 
 test:
-	@python RunTests.py
+	@$(PYTHON) RunTests.py
 
 clean:
 	find . -name '*.pyc' -exec rm '{}' ';'

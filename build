@@ -35,6 +35,9 @@ shift
 : "${GAR:=/usr/bin/gar}"
 : "${GLD:=/usr/bin/gld}"
 : "${GOBJCOPY:=/usr/bin/gobjcopy}"
+: "${PYTHON:=/usr/bin/python}"
+
+export PYTHON
 
 MAKE_ARGS="
     AS=$GAS
@@ -44,6 +47,7 @@ MAKE_ARGS="
     CC=$GCC BUILD_CC=$GCC
     CXX=$GXX BUILD_CXX=$GXX
     GCCPATH=$GCCPATH
+    PYTHON=$PYTHON
 "
 
 ILLGCC_BIN=$GCCPATH/bin/
